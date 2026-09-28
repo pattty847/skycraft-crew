@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+
+data/
+# Agent worktrees (see docs/COLLABORATION.md)
+.claude/worktrees/
+.worktrees/
+private/

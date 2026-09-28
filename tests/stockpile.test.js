@@ -1,0 +1,26 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { tempRoom,restart,join,input } from './helpers.js';
+test('browser and companion stockpile actions conserve items, enforce reach, and survive restart',t=>{
+ const room=tempRoom(t,{prefix:'sky-stockpile-'}),{socket:s,entity:player}=join(room),bot=room.simulation.spawn('codex-companion');
+ player.position={x:56.5,y:20,z:96.5};bot.position={x:57.5,y:20,z:96.5};
+ const start=player.inventory[9];
+ input(room,s,0,{type:'deposit',entityId:bot.id,blockId:9,count:5});
+ assert.equal(player.inventory[9],start-5);assert.equal(room.stockpile.items[9],5);
+ assert.equal(s.messages.at(-1).ok,true);
+ bot.actions.withdraw(9,3);room.tick(1/60);
+ assert.equal(bot.inventory[9],27);assert.equal(room.stockpile.items[9],2);
+ player.position.x=70;
+ input(room,s,1,{type:'withdraw',blockId:9,count:2});
+ assert.equal(s.messages.at(-1).ok,false);assert.equal(room.stockpile.items[9],2);
+ player.position.x=56.5;
+ assert.throws(()=>room.receive(s,{type:'input',frames:[{sequence:2,actions:[{type:'withdraw',blockId:9,count:65}]}]}));
+ input(room,s,3,{type:'withdraw',blockId:9,count:3});
+ assert.equal(s.messages.at(-1).ok,false);assert.equal(room.stockpile.items[9],2);
+ bot.inventory[9]=65535;bot.actions.withdraw(9,1);room.tick(1/60);
+ assert.equal(bot.stockpileReceipt.ok,false);assert.equal(room.stockpile.items[9],2);
+ player.position.y=23;
+ input(room,s,4,{type:'deposit',blockId:9,count:1});
+ assert.equal(s.messages.at(-1).ok,false);assert.equal(room.stockpile.items[9],2);
+ const restored=restart(room);assert.equal(restored.stockpile.items[9],2);
+});

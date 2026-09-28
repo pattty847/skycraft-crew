@@ -1,0 +1,24 @@
+{
+  "name": "skycraft-crew",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test --test-timeout=60000 \"tests/**/*.test.js\"",
+    "models": "node scripts/list-codex-models.mjs",
+    "start": "node server/index.js",
+    "turns": "node scripts/turn-report.mjs",
+    "trace": "node scripts/trace.js"
+  },
+  "dependencies": {
+    "three": "^0.180.0",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "vite": "^7.1.7"
+  }
+}

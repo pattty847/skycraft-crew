@@ -1,0 +1,22 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { Companion, PERSONAS, HOME_CHANGE, HOME_LOOK_GAP } from '../server/companion.js';
+import { B } from '../src/blocks.js';
+import { tempRoom, fakeSocket } from './helpers.js';
+test('a build going up near home earns one look (screenshot or scene); growing trees do not', t => {
+  const room = tempRoom(t), agent = new Companion(room, new URL('../', import.meta.url).pathname, { ...PERSONAS.codex, resident: false });
+  assert.ok(agent.persona.home, 'residents have a home to watch');
+  agent.reflect = async reason => { agent.seen = reason; };
+  room.phase = .24; agent.wasNight = false; agent.hadHumans = true; agent.lastReflect = Date.now();
+  room.clients.set(fakeSocket(), { entity: { id: 'member', position: { x: 0, y: 30, z: 0 } } }); room.access = { isGuest: () => false };
+  const consider = () => { for (let i = 0; i < 10; i++) agent.considerReflecting(); };
+  consider(); assert.equal(agent.seen, undefined, 'the first check only remembers what is there');
+  const { x, z } = agent.persona.home, h = { x: Math.floor(x) + 3, z: Math.floor(z) + 3 };
+  for (let y = 36; y < 44; y++) room.world.set(h.x, y, h.z, B.LEAVES);
+  consider(); assert.equal(agent.seen, undefined, 'leaves come and go with trees');
+  for (let i = 0; i < HOME_CHANGE; i++) room.world.set(h.x + (i % 4), 44, h.z + Math.floor(i / 4), B.PLANKS);
+  consider(); assert.equal(agent.seen, 'something changed near your home');
+  agent.seen = undefined; for (let i = 0; i < HOME_CHANGE; i++) room.world.set(h.x + (i % 4), 45, h.z + Math.floor(i / 4), B.STONE);
+  consider(); assert.equal(agent.seen, undefined, `at most one look every ${HOME_LOOK_GAP / 60000} minutes`);
+  agent.lastHomeLook -= HOME_LOOK_GAP; consider(); assert.equal(agent.seen, 'something changed near your home');
+});
